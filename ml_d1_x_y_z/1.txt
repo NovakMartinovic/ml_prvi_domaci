@@ -1,1 +1,26 @@
-TODO popuniti odgovorima na pitanja iz problema 1
+a. [5p] Šta je „word2vec“? Objasniti smisao/primenu, bez detalja implementacije.
+
+Word2vec je tehnika koja se koristi u oblasti NLP-a (natural language processing) kako bi se izvukla vektorska reprezentacija reci iz jezickog korpusa. Razvili su ga Tomas Mikolov i njegov tim u google-u. Word2vec je koristan u pronalazenju sinonima reci u recenici. Word2vec je predstavljen sa dva modela (arhitekture) neuronskih mreza: Continuous Bag-of-Words i Continuous Skip-gram. Bag-of-Words predvidja rec na osnovu konteksta (nekoliko reci) pre i posle reci koja se predivja. Redosled reci u kontekstu nije bitan. Skip-gram predvidja nekoliko reci pre i posle trenutno posmatrane reci. Skip-gram je sporiji, ali pokazuje bolje rezultate kod ne toliko cestih reci.
+
+
+b. [5p] Objasniti razliku između „Precision“ i „Recall“ metrika i dati primer u kom slučaju nam koja više znači.
+
+Precision pokazuje koliko je izabranih ishoda relevantno? Precision je mera kvaliteta, sto je veci precision, to ima vise relevantnih rezultata u odnosu na irelevantne. Precision : true positive / (true positive + false positive)
+
+Recall, odnosno mera kolicine, pokazuje koliko relevantnih rezultata je izabrano. Recall : true positive / (true positive + false negative). Primetimo da false positive ne ulazi u racunicu recall-a.
+
+recall:
+
+Uzmimo primer modela koji predvidja potencijalnu bolest pacijenta na osnovu brzog uzorka krvi. Model se koristi da se usmeri pacijent na dalje analize i lecenje. Korisno je imati visok recall, jer zelimo da pokrijemo sto vise tacno indentifikovanih bolesti (ne zelimo slucajno da kazemo pacijentu da nije bolestan, a da je zapravo bolestan). Cena da indentifikujemo pogresnu bolest kod zdravog pacijenta je manja od cene da neindentifikujemo bolest kod bolesne osobe. Zdravi pacijenti bi saznali da nisu bolesni kroz dalje analize.
+
+percision:
+
+Uzmimo primer modela koji treba da izabere najboljeg kandidata za posao od velikog broja kandidata sa slicnim osobinama/karakteristikama. U ovom slucaju je korisno imati visoku preciznost, jer nam je to naznaka da biramo najboljeg moguceg kandidata.
+
+
+
+c. [5p] Šta je „linearna separabilnost“ (linear separability)? Da li su podaci iz skupa iris.csv linearno separabilni (objasniti šta se primećuje)?
+
+Linearna separabilnost je pojam kad dva skupa tacaka mozemo da podelimo sa jednom ili vise linija u prostoru.
+
+Podaci iz iris.csv pokazuju tri vrste cveta Iris i njhove razlike (duzinu i sirinu sepal-a i pelat-a). Iz podataka se moze izvuci zakljucak da je iris-setosa linearno separabilna u odnosu na iris-versicolor i iris-virginica, dok iris-versicolor i iris-virginica nisu medjusobno separabilni.
