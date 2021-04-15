@@ -77,25 +77,38 @@ classes = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
 data = pd.read_csv("data/iris.csv")
 spec = data.groupby('species')
 
-train = []
-trainClasses = []
-test = []
-testClasses = []
+train_data = []
+train_classes = []
+query_data = []
+query_classes = []
 
-for (k, group) in spec:
-    l = int(len(group) * 0.8)
-    i = [(x[0],x[1],x[2],x[3]) for x in group.to_numpy()]
-    c = [classes.index(x[4]) for x in group.to_numpy()]
-    train.extend(i[:l])
-    trainClasses.extend(c[:l])
-    test.extend(i[l:])
-    testClasses.extend(c[l:])
+for (group_class, group) in spec:
+   if(group_class not in classes):
+      continue
+   class_index = classes.index(group_class)
+   l = int(len(group) * 0.8)
+   i = []
+   c = []
+   for item in group.itertuples():
+      t = []
+      for feature in features:
+         t.append(getattr(item, feature))
+      i.append(tuple(t))
+      c.append(class_index)
+
+   train_data.extend(i[:l])
+   train_classes.extend(c[:l])
+   query_data.extend(i[l:])
+   query_classes.extend(c[l:])
 
 nb_features = len(features)
 nb_classes = len(classes)
 k = 3
 
-knn = KNN(nb_features, nb_classes, train, trainClasses, k, weighted = False)
+print(query_data)
+print(query_classes)
 
-accuracy =  knn.predict(test,testClasses)
+knn = KNN(nb_features, nb_classes, train_data, train_classes, k, weighted = False)
+
+accuracy =  knn.predict(query_data,query_classes)
 print('Test set accuracy: ', accuracy)
