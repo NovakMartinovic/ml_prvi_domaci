@@ -103,6 +103,7 @@ knn = KNN(nb_features, nb_classes, train_data, train_classes, k, weighted = Fals
 result_classes =  knn.predict(query_data)
 
 class_coloros = ['r', 'g', 'b']
+class_back_coloros = ['orange', 'lightgreen', 'lightblue']
 
   # Generisemo grid.
 step_size = 0.01
@@ -126,10 +127,7 @@ pred_plot = pred_val.reshape([x1.shape[0], x1.shape[1]])
 # Crtamo contour plot.
 from matplotlib.colors import LinearSegmentedColormap
 
-classes_cmap = LinearSegmentedColormap.from_list('classes_cmap', 
-                                                ['orange', 
-                                                   'lightgreen', 
-                                                   'lightblue'])
+classes_cmap = LinearSegmentedColormap.from_list('classes_cmap', class_back_coloros)
 plt.contourf(x1, x2, pred_plot, cmap=classes_cmap, alpha=0.7)
   
 
