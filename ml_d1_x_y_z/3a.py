@@ -44,7 +44,7 @@ class KNN:
     self.hyp = tf.argmax(self.scores)
   
   # Ako imamo odgovore za upit racunamo i accuracy.
-  def predict(self, query_data, actual_classes):
+  def predict(self, query_data):
     
     with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
@@ -52,26 +52,16 @@ class KNN:
       nb_queries = len(query_data)
       
       matches = 0
+      result_classes = []
       for i in range(nb_queries):
          hyp_val = sess.run(self.hyp, feed_dict = {self.TrainData: self.trainData, 
                                                   self.Classes: self.trainDataClasses, 
                                                   self.QueryVector: query_data[i]})
-         actual = actual_classes[i]
-         match = (hyp_val == actual)
-         if match:
-            matches += 1
-         if not match:
-            print("Predicted: {}| Actual: {}".format(hyp_val, actual))
-         if i % 10 == 0:
-            print('Test example: {}/{}| Predicted: {}| Actual: {}| Match: {}'
-               .format(i+1, nb_queries, hyp_val, actual, match))
-      
-      accuracy = matches / nb_queries
-      print('{} matches out of {} examples'.format(matches, nb_queries))
-      return accuracy
+         result_classes.append(hyp_val)
+      return result_classes
     
 
-features = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
+features = ["sepal_length", "sepal_width"] #, "petal_length", "petal_width"
 classes = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
 
 data = pd.read_csv("data/iris.csv")
@@ -110,5 +100,66 @@ print(query_classes)
 
 knn = KNN(nb_features, nb_classes, train_data, train_classes, k, weighted = False)
 
-accuracy =  knn.predict(query_data,query_classes)
-print('Test set accuracy: ', accuracy)
+result_classes =  knn.predict(query_data)
+
+class_coloros = ['r', 'g', 'b']
+
+  # Generisemo grid.
+step_size = 0.01
+
+train_data_x = [a_tuple[0] for a_tuple in train_data]
+train_data_y = [a_tuple[1] for a_tuple in train_data]
+
+
+x1, x2 = np.meshgrid(np.arange(min(train_data_x), max(train_data_x),step_size),
+                     np.arange(min(train_data_y), max(train_data_y), step_size))
+x_feed = np.vstack((x1.flatten(), x2.flatten())).T
+
+# Racunamo vrednost hipoteze.
+
+pred_val = np.array(knn.predict(x_feed))
+pred_plot = pred_val.reshape([x1.shape[0], x1.shape[1]])
+  
+
+# = pred_val.reshape([x1.shape[0], x1.shape[1]])
+
+# Crtamo contour plot.
+from matplotlib.colors import LinearSegmentedColormap
+
+classes_cmap = LinearSegmentedColormap.from_list('classes_cmap', 
+                                                ['orange', 
+                                                   'lightgreen', 
+                                                   'lightblue'])
+plt.contourf(x1, x2, pred_plot, cmap=classes_cmap, alpha=0.7)
+  
+
+
+for c in range(len(classes)):
+   #p = [q.index(v) if v in q else 99999 for v in vm]
+   x = [query_data[i][0]  for i,v in enumerate(result_classes) if v == c]
+   y = [query_data[i][1]  for i,v in enumerate(result_classes) if v == c]
+   plt.scatter(x,y, c=class_coloros[c], edgecolors='k', label=classes[c])
+# plt.title("Accuracy {0:.0%}".format(accuracy))
+
+plt.legend()
+plt.show()
+#  # Crtamo contour plot.
+#   from matplotlib.colors import LinearSegmentedColormap
+#   classes_cmap = LinearSegmentedColormap.from_list('classes_cmap', 
+#                                                    ['lightblue', 
+#                                                     'lightgreen', 
+#                                                     'lightyellow'])
+#   plt.contourf(x1, x2, pred_plot, cmap=classes_cmap, alpha=0.7)
+  
+#   # Crtamo sve podatke preko.
+#   idxs_0 = data['y'] == 0.0
+#   idxs_1 = data['y'] == 1.0
+#   idxs_2 = data['y'] == 2.0
+#   plt.scatter(data['x'][idxs_0, 0], data['x'][idxs_0, 1], c='b', 
+#               edgecolors='k', label='Klasa 0')
+#   plt.scatter(data['x'][idxs_1, 0], data['x'][idxs_1, 1], c='g', 
+#               edgecolors='k', label='Klasa 1')
+#   plt.scatter(data['x'][idxs_2, 0], data['x'][idxs_2, 1], c='y', 
+#               edgecolors='k', label='Klasa 2')
+#   plt.legend()
+#   # Uporediti plot za 1 i 100 epoha.
