@@ -3,6 +3,7 @@ import tensorflow.compat.v1 as tf
 import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap
+from sklearn.utils import shuffle
 
 tf.disable_v2_behavior()
 
@@ -66,12 +67,17 @@ features = ["sepal_length", "sepal_width"] #, "petal_length", "petal_width"
 classes = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
 
 data = pd.read_csv("data/iris.csv")
+data = shuffle(data)
+
 spec = data.groupby('species')
+
 
 train_data = []
 train_classes = []
 query_data = []
 query_classes = []
+all_data = []
+
 
 for (group_class, group) in spec:
    if(group_class not in classes):
@@ -91,6 +97,7 @@ for (group_class, group) in spec:
    train_classes.extend(c[:l])
    query_data.extend(i[l:])
    query_classes.extend(c[l:])
+   all_data.extend(i)
 
 nb_features = len(features)
 nb_classes = len(classes)
@@ -106,14 +113,14 @@ class_back_coloros = ['orange', 'lightgreen', 'lightblue']
 # step_size = 0.01 mnogo je sporo sa ovim accuracijem
 step_size = 0.03
 
-train_data_x = [t[0] for t in train_data]
-train_data_y = [t[1] for t in train_data]
+all_data_x = [t[0] for t in all_data]
+all_data_y = [t[1] for t in all_data]
 
 query_data_x = [t[0] for t in query_data]
 query_data_y = [t[1] for t in query_data]
 
-x1, x2 = np.meshgrid(np.arange(min(train_data_x), max(train_data_x), step_size),
-                     np.arange(min(train_data_y), max(train_data_y), step_size))
+x1, x2 = np.meshgrid(np.arange(min(all_data_x), max(all_data_x), step_size),
+                     np.arange(min(all_data_y), max(all_data_y), step_size))
 
 
 x_feed = np.vstack((x1.flatten(), x2.flatten())).T
