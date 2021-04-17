@@ -106,8 +106,11 @@ class_back_coloros = ['orange', 'lightgreen', 'lightblue']
 # step_size = 0.01 mnogo je sporo sa ovim accuracijem
 step_size = 0.03
 
-train_data_x = [t[0] for t in query_data]
-train_data_y = [t[1] for t in query_data]
+train_data_x = [t[0] for t in train_data]
+train_data_y = [t[1] for t in train_data]
+
+query_data_x = [t[0] for t in query_data]
+query_data_y = [t[1] for t in query_data]
 
 x1, x2 = np.meshgrid(np.arange(min(train_data_x), max(train_data_x), step_size),
                      np.arange(min(train_data_y), max(train_data_y), step_size))
@@ -122,8 +125,8 @@ classes_cmap = LinearSegmentedColormap.from_list('classes_cmap', class_back_colo
 plt.contourf(x1, x2, pred_plot, cmap=classes_cmap, alpha=0.7)
 
 for c in range(len(classes)):
-   x = [train_data_x[i] for i,v in enumerate(result_classes) if v == c]
-   y = [train_data_y[i] for i,v in enumerate(result_classes) if v == c]
+   x = [query_data_x[i] for i,v in enumerate(result_classes) if v == c]
+   y = [query_data_y[i] for i,v in enumerate(result_classes) if v == c]
    plt.scatter(x,y, c=class_coloros[c], edgecolors='k', label=classes[c])
 
 
