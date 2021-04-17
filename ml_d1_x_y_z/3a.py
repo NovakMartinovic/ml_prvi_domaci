@@ -119,7 +119,7 @@ pred_val = np.array(knn.predict(x_feed))
 pred_plot = pred_val.reshape([x1.shape[0], x1.shape[1]])
 
 classes_cmap = LinearSegmentedColormap.from_list('classes_cmap', class_back_coloros)
-#plt.contourf(x1, x2, pred_plot, cmap=classes_cmap, alpha=0.7)
+plt.contourf(x1, x2, pred_plot, cmap=classes_cmap, alpha=0.7)
 
 for c in range(len(classes)):
    x = [train_data_x[i] for i,v in enumerate(result_classes) if v == c]
