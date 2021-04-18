@@ -12,6 +12,7 @@ import numpy as np
 import re
 from functools import partial
 from collections import defaultdict
+from functools import reduce
 
 
 def time_it(f):
@@ -25,10 +26,12 @@ def time_it(f):
 
     return wrapper
 
+
 @time_it
 def save_to_disk(path, item):
     with open(path, 'wb') as f:
         pickle.dump(item, f)
+
 
 @time_it
 def load_from_disk(path):
@@ -36,13 +39,14 @@ def load_from_disk(path):
         item = pickle.load(f)
     return item
 
+
 def otvori(path):
     with open(path, 'r', encoding='utf-8') as review:
         return review.read()
 
+
 @time_it
 def bag_of_words(path, broj_vektora=-1):
-
     # Cistimo korpus
     print('Cleaning the corpus...')
     clean_corpus = []
@@ -50,11 +54,12 @@ def bag_of_words(path, broj_vektora=-1):
 
     stop_punc = set(stopwords.words('english')).union(set(punctuation))
     for folder in os.listdir(path):
-        for i, filename in enumerate(os.listdir(os.path.join(path,folder))):
+        for i, filename in enumerate(os.listdir(os.path.join(path, folder))):
             if i == broj_vektora:
                 break
             specijalni_karakteri = r'[(.,\*\"\'!?\(\)\[\]\$^@%£\-#:)/\\]'
-            doc = re.sub(specijalni_karakteri, '', re.sub('<br />', '', otvori(os.path.join(path+'/'+folder, filename))))
+            doc = re.sub(specijalni_karakteri, '',
+                         re.sub('<br />', '', otvori(os.path.join(path + '/' + folder, filename))))
             words = wordpunct_tokenize(doc)
             words_lower = [w.lower() for w in words]
             words_filtered = [w for w in words_lower if w not in stop_punc]
@@ -68,7 +73,7 @@ def bag_of_words(path, broj_vektora=-1):
         for word in doc:
             vocab_dict[word] += 1
 
-    vocab = list(map(lambda x: x[0] , sorted(vocab_dict.items(), key=lambda item: item[1], reverse=True)[:10000]))
+    vocab = list(map(lambda x: x[0], sorted(vocab_dict.items(), key=lambda item: item[1], reverse=True)[:10000]))
 
     print('Vocab:', list(zip(vocab, range(len(vocab)))))
     print('Vocab size: ', len(vocab))
@@ -89,7 +94,7 @@ def bag_of_words(path, broj_vektora=-1):
     print(X)
     print()
 
-    return X
+    return X, vocab
 
 
 class MultinomialNaiveBayes:
@@ -122,25 +127,23 @@ class MultinomialNaiveBayes:
                 occs[c][w] += cnt
         print('Occurences:')
         print(occs)
-        
+
         # Racunamo P(Rec_i|Klasa) - likelihoods
         self.like = np.zeros((self.nb_classes, self.nb_words))
         for c in range(self.nb_classes):
             for w in range(self.nb_words):
                 up = occs[c][w] + self.alpha
-                down = np.sum(occs[c]) + self.nb_words*self.alpha
+                down = np.sum(occs[c]) + self.nb_words * self.alpha
                 self.like[c][w] = up / down
         print('Likelihoods:')
         print(self.like)
 
-    
-    
-    @time_it  
+    @time_it
     def predict(self, bows):
         predictions = []
-        for bow in bows: 
+        for bow in bows:
             # Racunamo P(Klasa|bow) za svaku klasu
-            probs = np.zeros(self.nb_classes) # [0.7, 0.3]
+            probs = np.zeros(self.nb_classes)  # [0.7, 0.3]
             for c in range(self.nb_classes):
                 prob = np.log(self.priors[c])
                 for w in range(self.nb_words):
@@ -155,30 +158,19 @@ class MultinomialNaiveBayes:
         return np.asarray(predictions)
 
 
-
-
 def bayes(X):
-
-    def verify(resenje):
-        brojac = 0
-        for x, y in resenje:
-            if x == y:
-                brojac += 1
-        print(brojac/len(prediction))
-        return brojac/len(prediction)
-
-    Y = np.concatenate((np.zeros(1250, dtype=np.int64),np.ones(1250, dtype= np.int64)))
+    Y = np.concatenate((np.zeros(1250, dtype=np.int64), np.ones(1250, dtype=np.int64)))
 
     trening = dict()
     test = dict()
-    osamdeset = 2500*80//100
+    osamdeset = 2500 * 80 // 100
 
     indices = np.random.permutation(2500)
     X = X[indices]
     Y = Y[indices]
 
-    trening['x'] = X[:osamdeset]
-    trening['y'] = Y[:osamdeset]
+    trening['x'] = X1[:osamdeset]
+    trening['y'] = Y1[:osamdeset]
 
     test['x'] = X[osamdeset:]
     test['y'] = Y[osamdeset:]
@@ -189,23 +181,116 @@ def bayes(X):
     model.fit(trening['x'], trening['y'])
     prediction = model.predict(test_bow)
     # prediction = model.predict_multiply(test_bow)
-    resenje = verify(zip(prediction, test['y']))
+
+    return list(zip(prediction, test['y']))
 
 
-    return resenje
-    
+def verify(resenje):
+    brojac = 0
+    for x, y in resenje:
+        if x == y:
+            brojac += 1
+    print(brojac / len(resenje))
+    return brojac / len(resenje)
+
+
+def create_confusion_matrix(resenje):
+    TP, TN, FP, FN = 0, 0, 0, 0
+    for x, y in resenje:
+        if x == 1 and y == 1:
+            TP += 1
+        elif x == 0 and y == 0:
+            TN += 1
+        elif x == 1 and y == 0:
+            FP += 1
+        else:
+            FN += 1
+    return [[TN, FP], [FN, TP]]
+
+
 if __name__ == '__main__':
     # nltk.download()
-    # X = bag_of_words(path='data/imdb/imdb', broj_vektora=-1)
+    # X, vocab_dict = bag_of_words(path='data/imdb/imdb', broj_vektora=-1)
     # save_to_disk('X1.txt',X)
-    
+    # save_to_disk('vocab_dict', vocab_dict)
+
     X = load_from_disk('X1.txt')
-    lista_accuracy = []
-    for x in range(3):
-        lista_accuracy.append(bayes(X))
+    vocab = load_from_disk(('vocab_dict'))
+    # test_results = bayes(X)
+    # accuracy = verify(test_results)
+    # print(accuracy)
 
-    print(lista_accuracy)
+    # a)
+    # lista_accuracy = []
+    # for x in range(3):
+    #     X = bag_of_words(path='data/imdb/imdb', broj_vektora=-1)
+    #     lista_accuracy.append(verify(bayes))
+    # print(lista_accuracy)
 
-    
-    
+    # b)
+    # matrix = create_confusion_matrix(test_results)
+    # print(matrix)
+
+    # c)
+    negativni = X[:1250]
+    pozitivni = X[1250:]
+
+    # print(vocab)
+
+    negativni_vektor = np.zeros(10000, dtype=int)
+    for vector in negativni:
+        negativni_vektor += vector
+    negativni_vektor1 = sorted(list(zip(vocab, negativni_vektor)), key=lambda item: item[1], reverse=True)
+    prvih_deset_negativnih = negativni_vektor1[:5]
+
+    pozitivni_vektor = np.zeros(10000, dtype=int)
+    for vector in pozitivni:
+        pozitivni_vektor += vector
+    pozitivni_vektor1 = sorted(list(zip(vocab, pozitivni_vektor)), key=lambda item: item[1], reverse=True)
+    prvih_deset_pozitivnih = pozitivni_vektor1[:5]
+
+    for i, item in enumerate(prvih_deset_negativnih):
+        print(f'{i + 1} NEGATIVNI:{item}\tPOZITIVNI:{prvih_deset_pozitivnih[i]}')
+    '''
+    Mozemo primetiti da obe vrste kritika dele najcecih 5 reci, cak im je i broj pojavljivanja slican.
+    '''
+
+
+    def odredi_RL(ulaz):
+        if ulaz[0][1] < 10 or ulaz[1][1] < 10:
+            return 0, 0
+        return ulaz[0][0], round(ulaz[0][1] / ulaz[1][1], 5)
+
+
+    x = list(zip(list(zip(vocab, pozitivni_vektor)), list(zip(vocab, negativni_vektor))))
+
+    RL_list = list(map(odredi_RL, x))
+    # print(RL_list[:4])
+    # RL_min = RL_list.sort(key=lambda x,y : y, reverse= False)
+    # print(RL_min)
+    RL_max = sorted(RL_list, key=lambda item: item[1], reverse=True)[:10]
+
+
+    def reduce_RL_min(izlaz, ulaz):
+        if ulaz == (0, 0):
+            return izlaz
+        return izlaz + [ulaz]
+
+
+    RL_min = reduce(reduce_RL_min, sorted(RL_list, key=lambda item: item[1], reverse=False), [])[:10]
+
+    print()
+    for i, item in enumerate(RL_max):
+        print(f'{i + 1} MAX_RL:{item}\tMIN_RL:{RL_min[i]}')
+
+    '''
+    Mozemo primetiti sta razlikuje negativne od pozitivnih komentara. Rec 'stupid' na primer, se pojavljuje 10 puta vise 
+    u negativnim nego u pozitivnim komentarima. Ako bismo posmatrali obrnuto proporcionalnu vrednost MAX_RL, primeticemo da
+    se duplo razlikuje vrednost od MIN_RL. To je ili zato sto na reci iz MIN_RL ne nailazimo u pozitivnim komentarima, ili 
+    zato sto se reci iz MAX_RL pojavljuju nesto cesce u negativnim. Posmatrajmo izmisljeni komentar u kome koristimo
+    MAX_RL reci u negativnom kontekstu: 
+    "I strongly disagree! This isnt unique, this movie didnt highlight how amazing and beautiful my hometown is like!"
+
+    '''
+
 
