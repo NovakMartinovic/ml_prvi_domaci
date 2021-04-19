@@ -3,17 +3,18 @@ import re
 import pickle
 import os
 import nltk
+import numpy as np
 from nltk import FreqDist
 from nltk.tokenize import wordpunct_tokenize
-from string import punctuation
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
-import numpy as np
-import re
-from functools import partial
+from string import punctuation
+from functools import partial, reduce
 from collections import defaultdict
-from functools import reduce
+from zipfile import ZipFile
 
+
+# pomocne funkcije
 
 def time_it(f):
     import time
@@ -45,6 +46,7 @@ def otvori(path):
         return review.read()
 
 
+# funkcija koja vraca tuple matrice BOW feature vektora i vokabular 
 @time_it
 def bag_of_words(path, broj_vektora=-1):
     # Cistimo korpus
@@ -75,8 +77,8 @@ def bag_of_words(path, broj_vektora=-1):
 
     vocab = list(map(lambda x: x[0], sorted(vocab_dict.items(), key=lambda item: item[1], reverse=True)[:10000]))
 
-    print('Vocab:', list(zip(vocab, range(len(vocab)))))
-    print('Vocab size: ', len(vocab))
+    # print('Vocab:', list(zip(vocab, range(len(vocab)))))
+    # print('Vocab size: ', len(vocab))
 
     np.set_printoptions(precision=2, linewidth=200)
 
@@ -90,9 +92,9 @@ def bag_of_words(path, broj_vektora=-1):
     print('Creating BOW features...')
     X = np.array(list(map(create_BOW, clean_corpus)))
 
-    print('X:')
-    print(X)
-    print()
+    # print('X:')
+    # print(X)
+    # print()
 
     return X, vocab
 
@@ -111,22 +113,19 @@ class MultinomialNaiveBayes:
         # np.bincount nam za datu listu vraca broj pojavljivanja svakog celog
         # broja u intervalu [0, maksimalni broj u listi]
         self.priors = np.bincount(Y) / nb_examples
-        print('Priors:')
-        print(self.priors)
+        # print('Priors:')
+        # print(self.priors)
 
         # Racunamo broj pojavljivanja svake reci u svakoj klasi
         occs = np.zeros((self.nb_classes, self.nb_words))
-        '''
-        [[0, 0, .... 0],
-        [0, 0, .....0]]
-        '''
+
         for i in range(nb_examples):
             c = Y[i]
             for w in range(self.nb_words):
                 cnt = X[i][w]
                 occs[c][w] += cnt
-        print('Occurences:')
-        print(occs)
+        # print('Occurences:')
+        # print(occs)
 
         # Racunamo P(Rec_i|Klasa) - likelihoods
         self.like = np.zeros((self.nb_classes, self.nb_words))
@@ -135,8 +134,8 @@ class MultinomialNaiveBayes:
                 up = occs[c][w] + self.alpha
                 down = np.sum(occs[c]) + self.nb_words * self.alpha
                 self.like[c][w] = up / down
-        print('Likelihoods:')
-        print(self.like)
+        # print('Likelihoods:')
+        # print(self.like)
 
     @time_it
     def predict(self, bows):
@@ -157,9 +156,9 @@ class MultinomialNaiveBayes:
 
         return np.asarray(predictions)
 
-
+# funkcija koja izmesa matricu feature vektora, fituje model, testira ga i vraca rezultate testiranja
 def bayes(X):
-    Y = np.concatenate((np.zeros(1250, dtype=np.int64), np.ones(1250, dtype=np.int64)))
+    Y = np.concatenate((np.zeros(1250, dtype=np.int32), np.ones(1250, dtype=np.int32)))
 
     trening = dict()
     test = dict()
@@ -169,8 +168,8 @@ def bayes(X):
     X = X[indices]
     Y = Y[indices]
 
-    trening['x'] = X1[:osamdeset]
-    trening['y'] = Y1[:osamdeset]
+    trening['x'] = X[:osamdeset]
+    trening['y'] = Y[:osamdeset]
 
     test['x'] = X[osamdeset:]
     test['y'] = Y[osamdeset:]
@@ -178,22 +177,24 @@ def bayes(X):
     test_bow = test['x']
 
     model = MultinomialNaiveBayes(nb_classes=2, nb_words=len(X[0]), alpha=1)
+    print('Fitting the model...')
     model.fit(trening['x'], trening['y'])
+    print('Testing the model...')
     prediction = model.predict(test_bow)
     # prediction = model.predict_multiply(test_bow)
 
     return list(zip(prediction, test['y']))
 
-
+# racuna preciznost testa
 def verify(resenje):
     brojac = 0
     for x, y in resenje:
         if x == y:
             brojac += 1
-    print(brojac / len(resenje))
+    print(f'accuracy: {brojac / len(resenje)}')
     return brojac / len(resenje)
 
-
+# pravi matricu konfuzije
 def create_confusion_matrix(resenje):
     TP, TN, FP, FN = 0, 0, 0, 0
     for x, y in resenje:
@@ -207,31 +208,9 @@ def create_confusion_matrix(resenje):
             FN += 1
     return [[TN, FP], [FN, TP]]
 
+# c)
+def pod_c(X, vocab):
 
-if __name__ == '__main__':
-    # nltk.download()
-    # X, vocab_dict = bag_of_words(path='data/imdb/imdb', broj_vektora=-1)
-    # save_to_disk('X1.txt',X)
-    # save_to_disk('vocab_dict', vocab_dict)
-
-    X = load_from_disk('X1.txt')
-    vocab = load_from_disk(('vocab_dict'))
-    # test_results = bayes(X)
-    # accuracy = verify(test_results)
-    # print(accuracy)
-
-    # a)
-    # lista_accuracy = []
-    # for x in range(3):
-    #     X = bag_of_words(path='data/imdb/imdb', broj_vektora=-1)
-    #     lista_accuracy.append(verify(bayes))
-    # print(lista_accuracy)
-
-    # b)
-    # matrix = create_confusion_matrix(test_results)
-    # print(matrix)
-
-    # c)
     negativni = X[:1250]
     pozitivni = X[1250:]
 
@@ -251,16 +230,12 @@ if __name__ == '__main__':
 
     for i, item in enumerate(prvih_deset_negativnih):
         print(f'{i + 1} NEGATIVNI:{item}\tPOZITIVNI:{prvih_deset_pozitivnih[i]}')
-    '''
-    Mozemo primetiti da obe vrste kritika dele najcecih 5 reci, cak im je i broj pojavljivanja slican.
-    '''
 
 
     def odredi_RL(ulaz):
         if ulaz[0][1] < 10 or ulaz[1][1] < 10:
             return 0, 0
         return ulaz[0][0], round(ulaz[0][1] / ulaz[1][1], 5)
-
 
     x = list(zip(list(zip(vocab, pozitivni_vektor)), list(zip(vocab, negativni_vektor))))
 
@@ -270,12 +245,10 @@ if __name__ == '__main__':
     # print(RL_min)
     RL_max = sorted(RL_list, key=lambda item: item[1], reverse=True)[:10]
 
-
     def reduce_RL_min(izlaz, ulaz):
         if ulaz == (0, 0):
             return izlaz
         return izlaz + [ulaz]
-
 
     RL_min = reduce(reduce_RL_min, sorted(RL_list, key=lambda item: item[1], reverse=False), [])[:10]
 
@@ -283,7 +256,49 @@ if __name__ == '__main__':
     for i, item in enumerate(RL_max):
         print(f'{i + 1} MAX_RL:{item}\tMIN_RL:{RL_min[i]}')
 
+
+if __name__ == '__main__':
+
+    if not os.path.exists('data/imdb/'):
+        print('Unzipping imdb.zip')
+        zf = ZipFile('data/imdb.zip', 'r')
+        zf.extractall('data/')
+        zf.close()
+  
+    # nltk.download()
+    # X, vocab_dict = bag_of_words(path='data/imdb/imdb', broj_vektora=-1)
+    # save_to_disk('X1.txt',X)
+    # save_to_disk('vocab_dict', vocab_dict)
+
+    # X = load_from_disk('X1.txt')
+    # vocab = load_from_disk(('vocab_dict'))
+    # test_results = bayes(X)
+    # accuracy = verify(test_results)
+    # print(accuracy)
+
+    # a)
+    print('a)\n')
+    lista_accuracy = []
+    for x in range(3):
+        print(f'++++++++++++++++++++++++++\nPOKRETANJE BR. {x+1}')
+        X, vocab = bag_of_words(path='data/imdb/', broj_vektora=-1)
+        results_data = bayes(X)
+        lista_accuracy.append(verify(results_data))
+    print(f'list_accuracy: {lista_accuracy}')
+
+    # b)
+    print('b)\n')
+    matrix = create_confusion_matrix(results_data)
+    print(f'confusion_matrix: {matrix}')
+
+    # c)
+    print('c)\n')
+    pod_c(X, vocab)
+
     '''
+
+    Mozemo primetiti da obe vrste kritika dele najcecih 5 reci, cak im je i broj pojavljivanja slican.
+
     Mozemo primetiti sta razlikuje negativne od pozitivnih komentara. Rec 'stupid' na primer, se pojavljuje 10 puta vise 
     u negativnim nego u pozitivnim komentarima. Ako bismo posmatrali obrnuto proporcionalnu vrednost MAX_RL, primeticemo da
     se duplo razlikuje vrednost od MIN_RL. To je ili zato sto na reci iz MIN_RL ne nailazimo u pozitivnim komentarima, ili 
